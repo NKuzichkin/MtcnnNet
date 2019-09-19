@@ -21,54 +21,80 @@ namespace MtcnnNet
         static dynamic code;
         private static IMongoCollection<PhotoModel> _collectionPhoto;
         private static IMongoCollection<PeopleModel> _collectionPeoples;
-
+        private static IMongoCollection<ProcessingStateModel> _totalPeopleProcessed;
         private static ConcurrentQueue<string> queuePhotoToDownload = new ConcurrentQueue<string>();
         private static ConcurrentQueue<(string,string)> queuePhotoToPricessing = new ConcurrentQueue<(string,string)>();
+        private static ConcurrentQueue<PhotoModel> queueResultToDbSave = new ConcurrentQueue<PhotoModel>();
+        private static ConcurrentQueue<string> queueFileFaceImgProcessing = new ConcurrentQueue<string>();
 
         private static readonly Metrics.Timer timer = Metric.Timer("Photo processing Time", Unit.Requests);
         private static readonly Counter counter = Metric.Counter("Total photo processed", Unit.Requests);
         private static readonly Counter CurrentDownloadingTasks= Metric.Counter("CurrentDownloadingTasks", Unit.Requests);
         private static readonly Counter TotalPeopleProcessed = Metric.Counter("TotalPeopleProcessed", Unit.Items);
+       
+
+        private static readonly string FaceImgFolderBasePath = @"../../../../facedb";
+        private static readonly string ColabGoogleDrivePath = @"/content/gdrive/My drive/facedb";
 
         static void Main(string[] args)
         {
+
+            Metric.Gauge("FileToTransferCount",()=> { return queueFileFaceImgProcessing.Count; }, Unit.Items);
             Metric.Config
-                //.WithHttpEndpoint("http://+:1234/")
-                .WithReporting(report => report.WithConsoleReport(TimeSpan.FromSeconds(10)))
+                .WithHttpEndpoint("http://+:1234/")
+                .WithReporting(report => report.WithReport(new ConsoleMetricReporter(),TimeSpan.FromSeconds(5)))
                 .WithAppCounters()
                 .WithAllCounters();
 
 
-            string connectionString = "mongodb://localhost:27017";
+            string connectionString = "mongodb://79.143.30.220:27088";
             var client = new MongoClient(connectionString);
             var _db = client.GetDatabase("vk");
             _collectionPhoto = _db.GetCollection<PhotoModel>("photos");
             _collectionPeoples = _db.GetCollection<PeopleModel>("peoples");
-           // PythonEngine.BeginAllowThreads();
+            _totalPeopleProcessed = _db.GetCollection<ProcessingStateModel>("ProcessingState");
+
+
+
+
+            // PythonEngine.BeginAllowThreads();
 
             var threatPhotoDownload = new Thread(DownloadTask);
             var threadPhotoProcessing = new Thread(ProcessPhotoTask);
+            var threadDbSaveProcessing = new Thread(SaveToDbTask);
+            var threadFileFaceImgProcessing = new Thread(FileFaceImgProcessingTask);
             threadPhotoProcessing.Start();
             threatPhotoDownload.Start();
+            threadDbSaveProcessing.Start();
+            threadFileFaceImgProcessing.Start();
 
             var q1 = Builders<PeopleModel>.Filter.Regex(x => x.UserCity, new MongoDB.Bson.BsonRegularExpression("Орен"));
             var q2 = Builders<PeopleModel>.Filter.Eq(x => x.Photos, null);
             var q3 = Builders<PeopleModel>.Filter.Not(q2);
             var q = Builders<PeopleModel>.Filter.And(q1, q3);
-            var peopleToProcessingCursor = _collectionPeoples.Find(q, new FindOptions { NoCursorTimeout = true }).Skip(55000);
+
+            var totalPeopleProcessing = 67000;
+            var sessionPeopleProcessing = 0;
+            var qq2 = Builders<ProcessingStateModel>.Filter.Eq(x => x.Id, 1);
+            totalPeopleProcessing =  _totalPeopleProcessed.Find(qq2).ToList().FirstOrDefault().PeopleProcessing;
+
+
+            var peopleToProcessingCursor = _collectionPeoples.Find(q, new FindOptions { NoCursorTimeout = true }).Skip(totalPeopleProcessing);
             var peopleToProcessing = peopleToProcessingCursor.ToList();
             foreach (var people in peopleToProcessing)
             {
+
                 TotalPeopleProcessed.Increment();
+                totalPeopleProcessing++;
+                sessionPeopleProcessing++;
                 if (people.Photos == null) continue;
                 foreach (var photo in people.Photos)
                 {
                     if (string.IsNullOrWhiteSpace(photo)) continue;
-                    if (_collectionPhoto.CountDocuments(Builders<PhotoModel>.Filter.Eq(x => x.photo, photo)) == 0)
+                    if (photo == "https://vk.com/images/x_null.gif") continue;
+                    if (_collectionPhoto.Find(Builders<PhotoModel>.Filter.Eq(x => x.photo, photo)).Limit(1).CountDocuments() == 0)
                     {
-                        if (photo == "https://vk.com/images/x_null.gif") continue;
-
-                        queuePhotoToDownload.Enqueue(photo);
+                          queuePhotoToDownload.Enqueue(photo);
                         if (queuePhotoToDownload.Count > 120)
                         {
                             while (queuePhotoToDownload.Count > 100)
@@ -77,6 +103,12 @@ namespace MtcnnNet
                             }
                         }
                     }
+                }
+                if(totalPeopleProcessing % 300 == 0)
+                {
+                    var qqq = Builders<ProcessingStateModel>.Filter.Eq(x => x.Id, 1);
+                    var updatum = Builders<ProcessingStateModel>.Update.Set(x => x.PeopleProcessing, totalPeopleProcessing);
+                    _totalPeopleProcessed.UpdateOne(qqq, updatum);
                 }
             }
 
@@ -190,18 +222,20 @@ sys.path.insert(0, '')");
                             var folder2 = filenameOut[1];
                             var folder3 = filenameOut[2];
 
-                            var saveFolderName = Path.GetDirectoryName($"../../../../facedb/{folder1}/{folder2}/{folder3}/");
+                            var saveFolderName = Path.GetDirectoryName($"{FaceImgFolderBasePath}/{folder1}/{folder2}/{folder3}/");
                             if (!Directory.Exists(saveFolderName))
                             {
                                 Directory.CreateDirectory(saveFolderName);
                             }
                             var saveFilename = Path.Join(saveFolderName, filenameOut + ".jpg");
                             cv2.imwrite(saveFilename, fff);
+                            queueFileFaceImgProcessing.Enqueue(saveFilename);
                             var boxum = ((int[])faces[ee]["box"].As<int[]>()).ToList();
                             photoModel.faces.Add(new Face { box = boxum, filename = filenameOut });
                         }
-                                                                       
-                        _collectionPhoto.InsertOne(photoModel);
+
+                        //_collectionPhoto.InsertOne(photoModel);
+                        queueResultToDbSave.Enqueue(photoModel);
                         counter.Increment();
                     }
                 }
@@ -244,6 +278,61 @@ sys.path.insert(0, '')");
                         CurrentDownloadingTasks.Increment();
                         client.GetByteArrayAsync(url).ContinueWith(ProcessDownloaded,url);
                     }
+                }
+            }
+        }
+
+        static void FileFaceImgProcessingTask()
+        {
+            while(true)
+            {
+                while (queueFileFaceImgProcessing.Count > 0)
+                {
+                    if (queueFileFaceImgProcessing.TryDequeue(out string fullFilename))
+                    {
+                        try
+                        {
+                            var filename = Path.GetFileName(fullFilename);
+                            var newFolderName = $"{ColabGoogleDrivePath}/{filename[0]}/{filename[1]}/{filename[2]}";
+                            if(!Directory.Exists(newFolderName))
+                            {
+                                Directory.CreateDirectory(newFolderName);
+                            }
+                            var newFilename = Path.Combine(newFolderName, filename);
+
+                            File.Copy(fullFilename, newFilename);
+                            File.Delete(fullFilename);
+                            
+                        }
+                        catch
+                        {
+
+                        }
+                    }
+                }
+            }
+        }
+
+
+        static void SaveToDbTask()
+        {
+            while(true)
+            {
+                if(queueResultToDbSave.Count>50)
+                {
+                    var buffer = new List<PhotoModel>();
+                    for(var h=0;h<50;h++)
+                    {
+                        if(queueResultToDbSave.TryDequeue(out PhotoModel photoModel))
+                        {
+                            buffer.Add(photoModel);
+                        }
+                    }
+                    _collectionPhoto.InsertMany(buffer);
+                }
+                else
+                {
+                    Thread.Sleep(100);
                 }
             }
         }
