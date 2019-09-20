@@ -118,9 +118,7 @@ namespace MtcnnNet
         }
 
         private static void ProcessPhotoTask()
-        {
-            
-            PythonEngine.PythonPath = "/env/python";
+        {   
             Console.WriteLine(PythonEngine.Version);
             using (Py.GIL())
             {
