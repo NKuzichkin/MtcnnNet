@@ -43,11 +43,13 @@ namespace MtcnnNet
             Metric.Config
 
                 //   // .WithHttpEndpoint("http://+:1234/")
-                .WithReporting(report => report.WithReport(new ConsoleMetricReporter(), TimeSpan.FromSeconds(30)))
+                .WithReporting(report => report.WithReport(new ConsoleMetricReporter(), TimeSpan.FromSeconds(300)));
 
-                .WithAppCounters();
+               // .WithAppCounters();
             //    .WithAllCounters();
 
+
+            Console.WriteLine("Start db connection");
 
             string connectionString = "mongodb://79.143.30.220:27088";
             var client = new MongoClient(connectionString);
@@ -56,11 +58,11 @@ namespace MtcnnNet
             _collectionPeoples = _db.GetCollection<PeopleModel>("peoples");
             _totalPeopleProcessed = _db.GetCollection<ProcessingStateModel>("ProcessingState");
 
-
+            Console.WriteLine("Db connection OK");
 
 
             // PythonEngine.BeginAllowThreads();
-
+            Console.WriteLine("Start thread init");
             var threatPhotoDownload = new Thread(DownloadTask);
             var threadPhotoProcessing = new Thread(ProcessPhotoTask);
             var threadDbSaveProcessing = new Thread(SaveToDbTask);
@@ -69,6 +71,8 @@ namespace MtcnnNet
             threatPhotoDownload.Start();
             threadDbSaveProcessing.Start();
             threadFileFaceImgProcessing.Start();
+
+            Console.WriteLine("Thread init OK");
 
             var q1 = Builders<PeopleModel>.Filter.Regex(x => x.UserCity, new MongoDB.Bson.BsonRegularExpression("Орен"));
             var q2 = Builders<PeopleModel>.Filter.Eq(x => x.Photos, null);
@@ -80,7 +84,7 @@ namespace MtcnnNet
             var qq2 = Builders<ProcessingStateModel>.Filter.Eq(x => x.Id, 1);
             totalPeopleProcessing =  _totalPeopleProcessed.Find(qq2).ToList().FirstOrDefault().PeopleProcessing;
 
-
+            Console.WriteLine("Start peopele to processing ressived");
             var peopleToProcessingCursor = _collectionPeoples.Find(q, new FindOptions { NoCursorTimeout = true }).Skip(totalPeopleProcessing);
             var peopleToProcessing = peopleToProcessingCursor.ToList();
             Console.WriteLine("People to processing: "+peopleToProcessing.Count);
