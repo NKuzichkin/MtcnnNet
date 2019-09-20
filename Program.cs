@@ -75,8 +75,8 @@ namespace MtcnnNet
 
             Console.WriteLine("Start peopele to processing ressived");
             var peopleToProcessingCursor = _collectionPeoples.Find(q, new FindOptions { NoCursorTimeout = true }).Skip(totalPeopleProcessing);
-            var peopleToProcessing = peopleToProcessingCursor.ToList();
-            Console.WriteLine("People to processing: "+peopleToProcessing.Count);
+            var peopleToProcessing = peopleToProcessingCursor.ToEnumerable();
+           // Console.WriteLine("People to processing: "+peopleToProcessing.Count);
 
 
             // PythonEngine.BeginAllowThreads();
