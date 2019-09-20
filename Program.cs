@@ -34,7 +34,7 @@ namespace MtcnnNet
        
 
         private static readonly string FaceImgFolderBasePath = @"../../../../facedb";
-        private static readonly string ColabGoogleDrivePath = @"/content/gdrive/My drive/facedb";
+        private static readonly string ColabGoogleDrivePath = @"/content/gdrive/My Drive/facedb";
 
         static void Main(string[] args)
         {
