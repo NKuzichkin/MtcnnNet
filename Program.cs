@@ -315,8 +315,10 @@ sys.path.insert(0, '/content/MtcnnNet/')");
                                 Directory.CreateDirectory(newFolderName);
                             }
                             var newFilename = Path.Combine(newFolderName, filename);
-
-                            File.Copy(fullFilename, newFilename);
+                            if (!File.Exists(newFilename))
+                            {
+                                File.Copy(fullFilename, newFilename);
+                            }
                             File.Delete(fullFilename);
                             
                         }
@@ -373,10 +375,14 @@ sys.path.insert(0, '/content/MtcnnNet/')");
                     File.WriteAllBytes(tmpFilename, downloadedPhoto);
                     queuePhotoToPricessing.Enqueue((tmpFilename, (string)state));
                 }
-                catch
+                catch(Exception ex)
                 {
-
+                    Console.WriteLine(ex);
                 }
+            }
+            else if (arg1.IsFaulted)
+            {
+                Console.WriteLine("Download photo error: "+arg1.Exception);
             }
 
         }
