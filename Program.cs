@@ -40,10 +40,13 @@ namespace MtcnnNet
         {
 
             Metric.Gauge("FileToTransferCount",()=> { return queueFileFaceImgProcessing.Count; }, Unit.Items);
+            Metric.Gauge("queuePhotoToDownload_Count", () => { return queuePhotoToDownload.Count; }, Unit.Items);
+            Metric.Gauge("queuePhotoToPricessing_Count", () => { return queuePhotoToPricessing.Count; }, Unit.Items);
+            Metric.Gauge("queueResultToDbSave_Count", () => { return queueResultToDbSave.Count; }, Unit.Items);
             Metric.Config
 
                 //   // .WithHttpEndpoint("http://+:1234/")
-                .WithReporting(report => report.WithReport(new ConsoleMetricReporter(), TimeSpan.FromSeconds(300)));
+                .WithReporting(report => report.WithReport(new ConsoleMetricReporter(), TimeSpan.FromSeconds(20)));
 
                // .WithAppCounters();
             //    .WithAllCounters();
@@ -317,9 +320,9 @@ sys.path.insert(0, '/content/MtcnnNet/')");
                             File.Delete(fullFilename);
                             
                         }
-                        catch
+                        catch(Exception ex)
                         {
-
+                            Console.WriteLine(ex);
                         }
                     }
                 }
