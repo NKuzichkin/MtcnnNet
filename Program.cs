@@ -204,8 +204,7 @@ sys.path.insert(0, '/content/MtcnnNet/')");
                         var imgToFaceDetection = cv2.resize(img, dsize: ffff);
                         var newShape = imgToFaceDetection.shape;
 
-                        var faces = detector.detect_faces(imgToFaceDetection);
-                        var facesTest = detector.detect_faces(img);
+                        var faces = detector.detect_faces(imgToFaceDetection);                       
 
                         var photoModel = new PhotoModel();
                         photoModel.photo = url;
