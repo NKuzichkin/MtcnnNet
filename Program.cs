@@ -119,8 +119,9 @@ namespace MtcnnNet
 
         private static void ProcessPhotoTask()
         {
-            Console.WriteLine(PythonEngine.PythonHome);
-            Console.WriteLine(PythonEngine.PythonPath);
+            
+            PythonEngine.PythonPath = "/env/python";
+            Console.WriteLine(PythonEngine.Version);
             using (Py.GIL())
             {
                 PythonEngine.Exec(@"import sys
