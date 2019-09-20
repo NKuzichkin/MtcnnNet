@@ -9,7 +9,7 @@
     <PackageReference Include="ConsoleTables" Version="2.3.0" />
     <PackageReference Include="Metrics.NET" Version="0.5.5" />
     <PackageReference Include="MongoDB.Driver" Version="2.9.1" />
-    <PackageReference Include="Python.Included" Version="3.7.3.2" />
+    <PackageReference Include="Python.Included36" Version="3.6.1.1" />
     <PackageReference Include="System.Configuration.ConfigurationManager" Version="4.5.0" />
     <PackageReference Include="System.Diagnostics.PerformanceCounter" Version="4.5.0" />
     <PackageReference Include="System.Net.Http" Version="4.3.4" />
