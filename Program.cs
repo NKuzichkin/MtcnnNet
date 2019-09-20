@@ -83,6 +83,7 @@ namespace MtcnnNet
 
             var peopleToProcessingCursor = _collectionPeoples.Find(q, new FindOptions { NoCursorTimeout = true }).Skip(totalPeopleProcessing);
             var peopleToProcessing = peopleToProcessingCursor.ToList();
+            Console.WriteLine("People to processing: "+peopleToProcessing.Count);
             foreach (var people in peopleToProcessing)
             {
 
