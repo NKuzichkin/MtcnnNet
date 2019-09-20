@@ -61,18 +61,7 @@ namespace MtcnnNet
             Console.WriteLine("Db connection OK");
 
 
-            // PythonEngine.BeginAllowThreads();
-            Console.WriteLine("Start thread init");
-            var threatPhotoDownload = new Thread(DownloadTask);
-            var threadPhotoProcessing = new Thread(ProcessPhotoTask);
-            var threadDbSaveProcessing = new Thread(SaveToDbTask);
-            var threadFileFaceImgProcessing = new Thread(FileFaceImgProcessingTask);
-            threadPhotoProcessing.Start();
-            threatPhotoDownload.Start();
-            threadDbSaveProcessing.Start();
-            threadFileFaceImgProcessing.Start();
-
-            Console.WriteLine("Thread init OK");
+            
 
             var q1 = Builders<PeopleModel>.Filter.Regex(x => x.UserCity, new MongoDB.Bson.BsonRegularExpression("Орен"));
             var q2 = Builders<PeopleModel>.Filter.Eq(x => x.Photos, null);
@@ -88,6 +77,21 @@ namespace MtcnnNet
             var peopleToProcessingCursor = _collectionPeoples.Find(q, new FindOptions { NoCursorTimeout = true }).Skip(totalPeopleProcessing);
             var peopleToProcessing = peopleToProcessingCursor.ToList();
             Console.WriteLine("People to processing: "+peopleToProcessing.Count);
+
+
+            // PythonEngine.BeginAllowThreads();
+            Console.WriteLine("Start thread init");
+            var threatPhotoDownload = new Thread(DownloadTask);
+            var threadPhotoProcessing = new Thread(ProcessPhotoTask);
+            var threadDbSaveProcessing = new Thread(SaveToDbTask);
+            var threadFileFaceImgProcessing = new Thread(FileFaceImgProcessingTask);
+            threadPhotoProcessing.Start();
+            threatPhotoDownload.Start();
+            threadDbSaveProcessing.Start();
+            threadFileFaceImgProcessing.Start();
+
+            Console.WriteLine("Thread init OK");
+
             foreach (var people in peopleToProcessing)
             {
 
