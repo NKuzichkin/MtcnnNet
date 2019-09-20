@@ -118,8 +118,7 @@ namespace MtcnnNet
         }
 
         private static void ProcessPhotoTask()
-        {
-
+        {            
             using (Py.GIL())
             {
                 PythonEngine.Exec(@"import sys
