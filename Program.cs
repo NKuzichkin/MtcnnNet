@@ -39,13 +39,13 @@ namespace MtcnnNet
         static void Main(string[] args)
         {
 
-            //Metric.Gauge("FileToTransferCount",()=> { return queueFileFaceImgProcessing.Count; }, Unit.Items);
-            //Metric.Config
-                
-            //   // .WithHttpEndpoint("http://+:1234/")
-            //    .WithReporting(report => report.WithReport(new ConsoleMetricReporter(),TimeSpan.FromSeconds(30)))
-                
-            //    .WithAppCounters()
+            Metric.Gauge("FileToTransferCount",()=> { return queueFileFaceImgProcessing.Count; }, Unit.Items);
+            Metric.Config
+
+                //   // .WithHttpEndpoint("http://+:1234/")
+                .WithReporting(report => report.WithReport(new ConsoleMetricReporter(), TimeSpan.FromSeconds(30)))
+
+                .WithAppCounters();
             //    .WithAllCounters();
 
 
