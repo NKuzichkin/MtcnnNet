@@ -74,8 +74,8 @@ namespace MtcnnNet
             totalPeopleProcessing =  _totalPeopleProcessed.Find(qq2).ToList().FirstOrDefault().PeopleProcessing;
 
             Console.WriteLine("Start peopele to processing ressived");
-            var peopleToProcessingCursor = _collectionPeoples.Find(q, new FindOptions { NoCursorTimeout = true }).Skip(totalPeopleProcessing);
-            var peopleToProcessing = peopleToProcessingCursor.ToEnumerable();
+            var peopleToProcessingCursor = _collectionPeoples.Find(q, new FindOptions { NoCursorTimeout = true }).Skip(totalPeopleProcessing).ToCursor();
+            //var peopleToProcessing = peopleToProcessingCursor.ToEnumerable();
            // Console.WriteLine("People to processing: "+peopleToProcessing.Count);
 
 
@@ -92,38 +92,41 @@ namespace MtcnnNet
 
             Console.WriteLine("Thread init OK");
 
-            foreach (var people in peopleToProcessing)
+            while (peopleToProcessingCursor.MoveNext() )
             {
+                var peopleToProcessing = peopleToProcessingCursor.Current.ToList();
+                Console.WriteLine(peopleToProcessing.Count);
 
-                TotalPeopleProcessed.Increment();
-                totalPeopleProcessing++;
-                sessionPeopleProcessing++;
-                if (people.Photos == null) continue;
-                foreach (var photo in people.Photos)
+                foreach (var people in peopleToProcessing)
                 {
-                    if (string.IsNullOrWhiteSpace(photo)) continue;
-                    if (photo == "https://vk.com/images/x_null.gif") continue;
-                    if (_collectionPhoto.Find(Builders<PhotoModel>.Filter.Eq(x => x.photo, photo)).Limit(1).CountDocuments() == 0)
+                    TotalPeopleProcessed.Increment();
+                    totalPeopleProcessing++;
+                    sessionPeopleProcessing++;
+                    if (people.Photos == null) continue;
+                    foreach (var photo in people.Photos)
                     {
-                          queuePhotoToDownload.Enqueue(photo);
-                        if (queuePhotoToDownload.Count > 120)
+                        if (string.IsNullOrWhiteSpace(photo)) continue;
+                        if (photo == "https://vk.com/images/x_null.gif") continue;
+                        if (_collectionPhoto.Find(Builders<PhotoModel>.Filter.Eq(x => x.photo, photo)).Limit(1).CountDocuments() == 0)
                         {
-                            while (queuePhotoToDownload.Count > 100)
+                            queuePhotoToDownload.Enqueue(photo);
+                            if (queuePhotoToDownload.Count > 120)
                             {
-                                Thread.Sleep(100);
+                                while (queuePhotoToDownload.Count > 100)
+                                {
+                                    Thread.Sleep(100);
+                                }
                             }
                         }
                     }
-                }
-                if(totalPeopleProcessing % 300 == 0)
-                {
-                    var qqq = Builders<ProcessingStateModel>.Filter.Eq(x => x.Id, 1);
-                    var updatum = Builders<ProcessingStateModel>.Update.Set(x => x.PeopleProcessing, totalPeopleProcessing);
-                    _totalPeopleProcessed.UpdateOne(qqq, updatum);
+                    if (totalPeopleProcessing % 300 == 0)
+                    {
+                        var qqq = Builders<ProcessingStateModel>.Filter.Eq(x => x.Id, 1);
+                        var updatum = Builders<ProcessingStateModel>.Update.Set(x => x.PeopleProcessing, totalPeopleProcessing);
+                        _totalPeopleProcessed.UpdateOne(qqq, updatum);
+                    }
                 }
             }
-
-
         }
 
         private static void ProcessPhotoTask()
@@ -339,7 +342,14 @@ sys.path.insert(0, '/content/MtcnnNet/')");
                             buffer.Add(photoModel);
                         }
                     }
-                    _collectionPhoto.InsertMany(buffer);
+                    try
+                    {
+                        _collectionPhoto.InsertMany(buffer);
+                    }
+                    catch
+                    {
+
+                    }
                 }
                 else
                 {
