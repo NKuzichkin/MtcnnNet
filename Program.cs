@@ -123,7 +123,7 @@ namespace MtcnnNet
             using (Py.GIL())
             {
                 PythonEngine.Exec(@"import sys
-sys.path.insert(0, '')");
+sys.path.insert(0, '/content/MtcnnNet/')");
                 np = Py.Import("numpy");
                 code = Py.Import("codeMy");
                 dynamic mtcnn = Py.Import("mtcnn.mtcnn");
