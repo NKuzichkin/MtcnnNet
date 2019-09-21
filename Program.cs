@@ -51,6 +51,7 @@ namespace MtcnnNet
             Metric.Gauge("queuePhotoToDownload_Count", () => { return queuePhotoToDownload.Count; }, Unit.Items);
             Metric.Gauge("queuePhotoToPricessing_Count", () => { return queuePhotoToPricessing.Count; }, Unit.Items);
             Metric.Gauge("queueResultToDbSave_Count", () => { return queueResultToDbSave.Count; }, Unit.Items);
+            Metric.Gauge("clientsPool_Count", () => { return clientsPool.Count; }, Unit.Items);
             Metric.Config
 
                 //   // .WithHttpEndpoint("http://+:1234/")
