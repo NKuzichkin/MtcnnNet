@@ -122,9 +122,9 @@ namespace MtcnnNet
                         //if (_collectionPhoto.Find(Builders<PhotoModel>.Filter.Eq(x => x.photo, photo)).Limit(1).CountDocuments() == 0)
                         {
                             queuePhotoToDownload.Enqueue(photo);
-                            if (queuePhotoToDownload.Count > 120)
+                            if (queuePhotoToDownload.Count > 550)
                             {
-                                while (queuePhotoToDownload.Count > 100)
+                                while (queuePhotoToDownload.Count > 500)
                                 {
                                     Thread.Sleep(100);
                                 }
