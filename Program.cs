@@ -86,9 +86,7 @@ namespace MtcnnNet
             totalPeopleProcessing = _totalPeopleProcessed.Find(qq2).ToList().FirstOrDefault().PeopleProcessing;
 
             Console.WriteLine("Start peopele to processing ressived");
-            var peopleToProcessingCursor = _collectionPeoples.Find(q, new FindOptions { NoCursorTimeout = true,
-                                                                        BatchSize =2000,
-                                                                         }).Skip(totalPeopleProcessing).ToCursor();
+            
             
             //var peopleToProcessing = peopleToProcessingCursor.ToEnumerable();
             // Console.WriteLine("People to processing: "+peopleToProcessing.Count);
@@ -106,40 +104,52 @@ namespace MtcnnNet
             threadFileFaceImgProcessing.Start();
 
             Console.WriteLine("Thread init OK");
-
-            while (peopleToProcessingCursor.MoveNext())
+            while (true)
             {
-                var peopleToProcessing = peopleToProcessingCursor.Current.ToList();
-                Console.WriteLine(peopleToProcessing.Count);
-
-                foreach (var people in peopleToProcessing)
+                var peopleToProcessingCursor = _collectionPeoples.Find(q, new FindOptions
                 {
-                    TotalPeopleProcessed.Increment();
-                    totalPeopleProcessing++;
-                    sessionPeopleProcessing++;
-                    if (people.Photos == null) continue;
-                    foreach (var photo in people.Photos)
+                    NoCursorTimeout = true,
+                    BatchSize = 2000,
+                }).Skip(totalPeopleProcessing).ToCursor();
+
+                var currentCursorItemsProcessed = 0;
+                while (peopleToProcessingCursor.MoveNext())
+                {
+                    currentCursorItemsProcessed++;
+                    var peopleToProcessing = peopleToProcessingCursor.Current.ToList();
+                    Console.WriteLine(peopleToProcessing.Count);
+
+                    foreach (var people in peopleToProcessing)
                     {
-                        if (string.IsNullOrWhiteSpace(photo)) continue;
-                        if (photo == "https://vk.com/images/x_null.gif") continue;
-                        //if (_collectionPhoto.Find(Builders<PhotoModel>.Filter.Eq(x => x.photo, photo)).Limit(1).CountDocuments() == 0)
+                        TotalPeopleProcessed.Increment();
+                        totalPeopleProcessing++;
+                        sessionPeopleProcessing++;
+                        if (people.Photos == null) continue;
+                        foreach (var photo in people.Photos)
                         {
-                            queuePhotoToDownload.Enqueue(photo);
-                            if (queuePhotoToDownload.Count > 550)
+                            if (string.IsNullOrWhiteSpace(photo)) continue;
+                            if (photo == "https://vk.com/images/x_null.gif") continue;
+                            //if (_collectionPhoto.Find(Builders<PhotoModel>.Filter.Eq(x => x.photo, photo)).Limit(1).CountDocuments() == 0)
                             {
-                                while (queuePhotoToDownload.Count > 500)
+                                queuePhotoToDownload.Enqueue(photo);
+                                if (queuePhotoToDownload.Count > 550)
                                 {
-                                    Thread.Sleep(100);
+                                    while (queuePhotoToDownload.Count > 500)
+                                    {
+                                        Thread.Sleep(100);
+                                    }
                                 }
                             }
                         }
+                        if (totalPeopleProcessing % 300 == 0)
+                        {
+                            var qqq = Builders<ProcessingStateModel>.Filter.Eq(x => x.Id, 1);
+                            var updatum = Builders<ProcessingStateModel>.Update.Set(x => x.PeopleProcessing, totalPeopleProcessing);
+                            _totalPeopleProcessed.UpdateOne(qqq, updatum);
+                        }
                     }
-                    if (totalPeopleProcessing % 300 == 0)
-                    {
-                        var qqq = Builders<ProcessingStateModel>.Filter.Eq(x => x.Id, 1);
-                        var updatum = Builders<ProcessingStateModel>.Update.Set(x => x.PeopleProcessing, totalPeopleProcessing);
-                        _totalPeopleProcessed.UpdateOne(qqq, updatum);
-                    }
+
+                    if (currentCursorItemsProcessed > 50) continue;
                 }
             }
         }
