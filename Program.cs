@@ -291,9 +291,9 @@ sys.path.insert(0, '/content/MtcnnNet/')");
             {
                 if (queuePhotoToDownload.Count > 0)
                 {
-                    while (queuePhotoToPricessing.Count > 100 || DownloadedCount > 30)
+                    while (queuePhotoToPricessing.Count > 1000 || DownloadedCount > 30)
                     {
-                        Thread.Sleep(100);
+                        Thread.Sleep(10);
                     }
                     var url = "";
                     if (queuePhotoToDownload.TryDequeue(out url))
@@ -305,6 +305,11 @@ sys.path.insert(0, '/content/MtcnnNet/')");
                             client.GetByteArrayAsync(url).ContinueWith(ProcessDownloaded,new HttpClientSateteModel {Url=url,Client=client });
                         }
                     }
+                    else
+                    {
+                        Console.WriteLine("Http clietn deq error!");
+                    }
+
                 }
             }
         }
