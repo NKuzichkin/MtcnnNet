@@ -42,7 +42,7 @@ namespace MtcnnNet
         static void Main(string[] args)
         {
 
-            for (var i = 0; i < 20; i++)
+            for (var i = 0; i < 40; i++)
             {
                 clientsPool.Enqueue(new HttpClient());
             }
@@ -291,7 +291,7 @@ sys.path.insert(0, '/content/MtcnnNet/')");
             {
                 if (queuePhotoToDownload.Count > 0)
                 {
-                    while (queuePhotoToPricessing.Count > 100 || DownloadedCount > 10)
+                    while (queuePhotoToPricessing.Count > 100 || DownloadedCount > 30)
                     {
                         Thread.Sleep(100);
                     }
