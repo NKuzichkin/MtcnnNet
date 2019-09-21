@@ -381,6 +381,7 @@ sys.path.insert(0, '/content/MtcnnNet/')");
             {
                 try
                 {
+                    clientsPool.Enqueue(state.Client);
                     var downloadedPhoto = arg1.Result;
                     var tmpFilename = state.Url.Replace("http://", "").Replace("https://", "").Replace("/", "_");
                     File.WriteAllBytes(tmpFilename, downloadedPhoto);
