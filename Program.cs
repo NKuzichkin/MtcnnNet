@@ -86,7 +86,9 @@ namespace MtcnnNet
             totalPeopleProcessing = _totalPeopleProcessed.Find(qq2).ToList().FirstOrDefault().PeopleProcessing;
 
             Console.WriteLine("Start peopele to processing ressived");
-            var peopleToProcessingCursor = _collectionPeoples.Find(q, new FindOptions { NoCursorTimeout = true }).Skip(totalPeopleProcessing).ToCursor();
+            var peopleToProcessingCursor = _collectionPeoples.Find(q, new FindOptions { NoCursorTimeout = true,
+                                                                        BatchSize =2000,
+                                                                        CursorType =CursorType.Tailable, }).Skip(totalPeopleProcessing).ToCursor();
             //var peopleToProcessing = peopleToProcessingCursor.ToEnumerable();
             // Console.WriteLine("People to processing: "+peopleToProcessing.Count);
 
@@ -293,7 +295,7 @@ sys.path.insert(0, '/content/MtcnnNet/')");
                 {
                     while (queuePhotoToPricessing.Count > 1000 || DownloadedCount > 30)
                     {
-                        Thread.Sleep(10);
+                        Thread.Sleep(2);
                     }
                     var url = "";
                     if (queuePhotoToDownload.TryDequeue(out url))
