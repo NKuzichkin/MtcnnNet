@@ -88,7 +88,8 @@ namespace MtcnnNet
             Console.WriteLine("Start peopele to processing ressived");
             var peopleToProcessingCursor = _collectionPeoples.Find(q, new FindOptions { NoCursorTimeout = true,
                                                                         BatchSize =2000,
-                                                                        CursorType =CursorType.Tailable, }).Skip(totalPeopleProcessing).ToCursor();
+                                                                         }).Skip(totalPeopleProcessing).ToCursor();
+            
             //var peopleToProcessing = peopleToProcessingCursor.ToEnumerable();
             // Console.WriteLine("People to processing: "+peopleToProcessing.Count);
 
