@@ -119,7 +119,7 @@ namespace MtcnnNet
                     {
                         if (string.IsNullOrWhiteSpace(photo)) continue;
                         if (photo == "https://vk.com/images/x_null.gif") continue;
-                        if (_collectionPhoto.Find(Builders<PhotoModel>.Filter.Eq(x => x.photo, photo)).Limit(1).CountDocuments() == 0)
+                        //if (_collectionPhoto.Find(Builders<PhotoModel>.Filter.Eq(x => x.photo, photo)).Limit(1).CountDocuments() == 0)
                         {
                             queuePhotoToDownload.Enqueue(photo);
                             if (queuePhotoToDownload.Count > 120)
