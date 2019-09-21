@@ -23,23 +23,31 @@ namespace MtcnnNet
         private static IMongoCollection<PeopleModel> _collectionPeoples;
         private static IMongoCollection<ProcessingStateModel> _totalPeopleProcessed;
         private static ConcurrentQueue<string> queuePhotoToDownload = new ConcurrentQueue<string>();
-        private static ConcurrentQueue<(string,string)> queuePhotoToPricessing = new ConcurrentQueue<(string,string)>();
+        private static ConcurrentQueue<(string, string)> queuePhotoToPricessing = new ConcurrentQueue<(string, string)>();
         private static ConcurrentQueue<PhotoModel> queueResultToDbSave = new ConcurrentQueue<PhotoModel>();
         private static ConcurrentQueue<string> queueFileFaceImgProcessing = new ConcurrentQueue<string>();
 
         private static readonly Metrics.Timer timer = Metric.Timer("Photo processing Time", Unit.Requests);
         private static readonly Counter counter = Metric.Counter("Total photo processed", Unit.Requests);
-        private static readonly Counter CurrentDownloadingTasks= Metric.Counter("CurrentDownloadingTasks", Unit.Requests);
+        private static readonly Counter CurrentDownloadingTasks = Metric.Counter("CurrentDownloadingTasks", Unit.Requests);
         private static readonly Counter TotalPeopleProcessed = Metric.Counter("TotalPeopleProcessed", Unit.Items);
-       
+
 
         private static readonly string FaceImgFolderBasePath = @"../../../../facedb";
         private static readonly string ColabGoogleDrivePath = @"/content/gdrive/My Drive/facedb";
 
+        public static ConcurrentQueue<HttpClient> clientsPool = new ConcurrentQueue<HttpClient>();
+        public static int currenHttpClientIndex = 0;
+
         static void Main(string[] args)
         {
 
-            Metric.Gauge("FileToTransferCount",()=> { return queueFileFaceImgProcessing.Count; }, Unit.Items);
+            for (var i = 0; i < 20; i++)
+            {
+                clientsPool.Enqueue(new HttpClient());
+            }
+
+            Metric.Gauge("FileToTransferCount", () => { return queueFileFaceImgProcessing.Count; }, Unit.Items);
             Metric.Gauge("queuePhotoToDownload_Count", () => { return queuePhotoToDownload.Count; }, Unit.Items);
             Metric.Gauge("queuePhotoToPricessing_Count", () => { return queuePhotoToPricessing.Count; }, Unit.Items);
             Metric.Gauge("queueResultToDbSave_Count", () => { return queueResultToDbSave.Count; }, Unit.Items);
@@ -48,7 +56,7 @@ namespace MtcnnNet
                 //   // .WithHttpEndpoint("http://+:1234/")
                 .WithReporting(report => report.WithReport(new ConsoleMetricReporter(), TimeSpan.FromSeconds(20)));
 
-               // .WithAppCounters();
+            // .WithAppCounters();
             //    .WithAllCounters();
 
 
@@ -64,7 +72,7 @@ namespace MtcnnNet
             Console.WriteLine("Db connection OK");
 
 
-            
+
 
             var q1 = Builders<PeopleModel>.Filter.Regex(x => x.UserCity, new MongoDB.Bson.BsonRegularExpression("Орен"));
             var q2 = Builders<PeopleModel>.Filter.Eq(x => x.Photos, null);
@@ -74,12 +82,12 @@ namespace MtcnnNet
             var totalPeopleProcessing = 67000;
             var sessionPeopleProcessing = 0;
             var qq2 = Builders<ProcessingStateModel>.Filter.Eq(x => x.Id, 1);
-            totalPeopleProcessing =  _totalPeopleProcessed.Find(qq2).ToList().FirstOrDefault().PeopleProcessing;
+            totalPeopleProcessing = _totalPeopleProcessed.Find(qq2).ToList().FirstOrDefault().PeopleProcessing;
 
             Console.WriteLine("Start peopele to processing ressived");
             var peopleToProcessingCursor = _collectionPeoples.Find(q, new FindOptions { NoCursorTimeout = true }).Skip(totalPeopleProcessing).ToCursor();
             //var peopleToProcessing = peopleToProcessingCursor.ToEnumerable();
-           // Console.WriteLine("People to processing: "+peopleToProcessing.Count);
+            // Console.WriteLine("People to processing: "+peopleToProcessing.Count);
 
 
             // PythonEngine.BeginAllowThreads();
@@ -95,7 +103,7 @@ namespace MtcnnNet
 
             Console.WriteLine("Thread init OK");
 
-            while (peopleToProcessingCursor.MoveNext() )
+            while (peopleToProcessingCursor.MoveNext())
             {
                 var peopleToProcessing = peopleToProcessingCursor.Current.ToList();
                 Console.WriteLine(peopleToProcessing.Count);
@@ -133,7 +141,7 @@ namespace MtcnnNet
         }
 
         private static void ProcessPhotoTask()
-        {   
+        {
             Console.WriteLine(PythonEngine.Version);
             using (Py.GIL())
             {
@@ -145,9 +153,9 @@ sys.path.insert(0, '/content/MtcnnNet/')");
                 detector = mtcnn.MTCNN(min_face_size: 25);
                 cv2 = Py.Import("cv2");
 
-                while(true)
+                while (true)
                 {
-                    if(queuePhotoToPricessing.Count > 0)
+                    if (queuePhotoToPricessing.Count > 0)
                     {
                         (string, string) state;
                         if (queuePhotoToPricessing.TryDequeue(out state))
@@ -207,7 +215,7 @@ sys.path.insert(0, '/content/MtcnnNet/')");
                         var imgToFaceDetection = cv2.resize(img, dsize: ffff);
                         var newShape = imgToFaceDetection.shape;
 
-                        var faces = detector.detect_faces(imgToFaceDetection);                       
+                        var faces = detector.detect_faces(imgToFaceDetection);
 
                         var photoModel = new PhotoModel();
                         photoModel.photo = url;
@@ -256,7 +264,7 @@ sys.path.insert(0, '/content/MtcnnNet/')");
                     }
                 }
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
 
             }
@@ -266,13 +274,13 @@ sys.path.insert(0, '/content/MtcnnNet/')");
                 {
                     File.Delete(filename);
                 }
-                catch(Exception ex)
+                catch (Exception ex)
                 {
                     Console.WriteLine(ex.Message);
                 }
-                
+
             }
-            
+
         }
 
         static int DownloadedCount = 0;
@@ -282,17 +290,19 @@ sys.path.insert(0, '/content/MtcnnNet/')");
             {
                 if (queuePhotoToDownload.Count > 0)
                 {
-                    while(queuePhotoToPricessing.Count>100 || DownloadedCount>10)
+                    while (queuePhotoToPricessing.Count > 100 || DownloadedCount > 10)
                     {
                         Thread.Sleep(100);
                     }
                     var url = "";
                     if (queuePhotoToDownload.TryDequeue(out url))
                     {
-                        var client = new HttpClient();
-                        DownloadedCount++;
-                        CurrentDownloadingTasks.Increment();
-                        client.GetByteArrayAsync(url).ContinueWith(ProcessDownloaded,url);
+                        if (clientsPool.TryDequeue(out HttpClient client))
+                        {
+                            DownloadedCount++;
+                            CurrentDownloadingTasks.Increment();
+                            client.GetByteArrayAsync(url).ContinueWith(ProcessDownloaded,new HttpClientSateteModel {Url=url,Client=client });
+                        }
                     }
                 }
             }
@@ -300,7 +310,7 @@ sys.path.insert(0, '/content/MtcnnNet/')");
 
         static void FileFaceImgProcessingTask()
         {
-            while(true)
+            while (true)
             {
                 while (queueFileFaceImgProcessing.Count > 0)
                 {
@@ -310,7 +320,7 @@ sys.path.insert(0, '/content/MtcnnNet/')");
                         {
                             var filename = Path.GetFileName(fullFilename);
                             var newFolderName = $"{ColabGoogleDrivePath}/{filename[0]}/{filename[1]}/{filename[2]}";
-                            if(!Directory.Exists(newFolderName))
+                            if (!Directory.Exists(newFolderName))
                             {
                                 Directory.CreateDirectory(newFolderName);
                             }
@@ -320,9 +330,9 @@ sys.path.insert(0, '/content/MtcnnNet/')");
                                 File.Copy(fullFilename, newFilename);
                             }
                             File.Delete(fullFilename);
-                            
+
                         }
-                        catch(Exception ex)
+                        catch (Exception ex)
                         {
                             Console.WriteLine(ex);
                         }
@@ -334,14 +344,14 @@ sys.path.insert(0, '/content/MtcnnNet/')");
 
         static void SaveToDbTask()
         {
-            while(true)
+            while (true)
             {
-                if(queueResultToDbSave.Count>50)
+                if (queueResultToDbSave.Count > 50)
                 {
                     var buffer = new List<PhotoModel>();
-                    for(var h=0;h<50;h++)
+                    for (var h = 0; h < 50; h++)
                     {
-                        if(queueResultToDbSave.TryDequeue(out PhotoModel photoModel))
+                        if (queueResultToDbSave.TryDequeue(out PhotoModel photoModel))
                         {
                             buffer.Add(photoModel);
                         }
@@ -362,8 +372,9 @@ sys.path.insert(0, '/content/MtcnnNet/')");
             }
         }
 
-        private static void ProcessDownloaded(Task<byte[]> arg1, object state)
+        private static void ProcessDownloaded(Task<byte[]> arg1, object stateIn)
         {
+            var state = (HttpClientSateteModel)stateIn;
             DownloadedCount--;
             CurrentDownloadingTasks.Decrement();
             if (arg1.IsCompleted)
@@ -371,18 +382,18 @@ sys.path.insert(0, '/content/MtcnnNet/')");
                 try
                 {
                     var downloadedPhoto = arg1.Result;
-                    var tmpFilename = ((string)state).Replace("http://", "").Replace("https://", "").Replace("/", "_");
+                    var tmpFilename = state.Url.Replace("http://", "").Replace("https://", "").Replace("/", "_");
                     File.WriteAllBytes(tmpFilename, downloadedPhoto);
-                    queuePhotoToPricessing.Enqueue((tmpFilename, (string)state));
+                    queuePhotoToPricessing.Enqueue((tmpFilename,state.Url));
                 }
-                catch(Exception ex)
+                catch (Exception ex)
                 {
                     Console.WriteLine(ex);
                 }
             }
             else if (arg1.IsFaulted)
             {
-                Console.WriteLine("Download photo error: "+arg1.Exception);
+                Console.WriteLine("Download photo error: " + arg1.Exception);
             }
 
         }
