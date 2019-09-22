@@ -108,15 +108,14 @@ namespace MtcnnNet
             {
                 var peopleToProcessingCursor = _collectionPeoples.Find(q, new FindOptions
                 {
-                    NoCursorTimeout = true,
-                    BatchSize = 200000,
-                }).Skip(totalPeopleProcessing).ToCursor();
+                    
+                }).Skip(totalPeopleProcessing).ToList();
 
                 var currentCursorItemsProcessed = 0;
-                while (peopleToProcessingCursor.MoveNext())
+               // while (peopleToProcessingCursor.MoveNext())
                 {
                     currentCursorItemsProcessed++;
-                    var peopleToProcessing = peopleToProcessingCursor.Current.ToList();
+                    var peopleToProcessing = peopleToProcessingCursor.ToList();
                     Console.WriteLine(peopleToProcessing.Count);
 
                     foreach (var people in peopleToProcessing)
