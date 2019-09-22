@@ -86,8 +86,8 @@ namespace MtcnnNet
             totalPeopleProcessing = _totalPeopleProcessed.Find(qq2).ToList().FirstOrDefault().PeopleProcessing;
 
             Console.WriteLine("Start peopele to processing ressived");
-
-
+            
+            
             //var peopleToProcessing = peopleToProcessingCursor.ToEnumerable();
             // Console.WriteLine("People to processing: "+peopleToProcessing.Count);
 
@@ -108,14 +108,15 @@ namespace MtcnnNet
             {
                 var peopleToProcessingCursor = _collectionPeoples.Find(q, new FindOptions
                 {
-                    
-                }).Skip(totalPeopleProcessing).ToList();
+                    NoCursorTimeout = true,
+                    BatchSize = 500,
+                }).Skip(totalPeopleProcessing).ToCursor();
 
                 var currentCursorItemsProcessed = 0;
-               // while (peopleToProcessingCursor.MoveNext())
+                while (peopleToProcessingCursor.MoveNext())
                 {
                     currentCursorItemsProcessed++;
-                    var peopleToProcessing = peopleToProcessingCursor.ToList();
+                    var peopleToProcessing = peopleToProcessingCursor.Current.ToList();
                     Console.WriteLine(peopleToProcessing.Count);
 
                     foreach (var people in peopleToProcessing)
@@ -131,12 +132,12 @@ namespace MtcnnNet
                             //if (_collectionPhoto.Find(Builders<PhotoModel>.Filter.Eq(x => x.photo, photo)).Limit(1).CountDocuments() == 0)
                             {
                                 queuePhotoToDownload.Enqueue(photo);
-
-                                while (queuePhotoToDownload.Count > 5000)
-                                {
-                                    Thread.Sleep(10);
-                                }
-
+                                
+                                    while (queuePhotoToDownload.Count > 5000)
+                                    {
+                                        Thread.Sleep(10);
+                                    }
+                                
                             }
                         }
                         if (totalPeopleProcessing % 300 == 0)
@@ -324,7 +325,7 @@ sys.path.insert(0, '/content/MtcnnNet/')");
                         }
                     }
                 }
-                catch (Exception ex)
+                catch(Exception ex)
                 {
                     Console.WriteLine(ex);
                 }
@@ -408,7 +409,7 @@ sys.path.insert(0, '/content/MtcnnNet/')");
                     var downloadedPhoto = arg1.Result;
                     var tmpFilename = state.Url.Replace("http://", "").Replace("https://", "").Replace("/", "_");
                     File.WriteAllBytes(tmpFilename, downloadedPhoto);
-                    queuePhotoToPricessing.Enqueue((tmpFilename, state.Url));
+                    queuePhotoToPricessing.Enqueue((tmpFilename,state.Url));
                 }
                 catch (Exception ex)
                 {
