@@ -109,7 +109,7 @@ namespace MtcnnNet
                 var peopleToProcessingCursor = _collectionPeoples.Find(q, new FindOptions
                 {
                     NoCursorTimeout = true,
-                    BatchSize = 2000,
+                    BatchSize = 20000,
                 }).Skip(totalPeopleProcessing).ToCursor();
 
                 var currentCursorItemsProcessed = 0;
@@ -149,7 +149,7 @@ namespace MtcnnNet
                         }
                     }
 
-                    if (currentCursorItemsProcessed > 50) continue;
+                    if (currentCursorItemsProcessed > 1) continue;
                 }
             }
         }
