@@ -302,27 +302,33 @@ sys.path.insert(0, '/content/MtcnnNet/')");
         {
             while (true)
             {
-                if (queuePhotoToDownload.Count > 0)
+                try
                 {
-                    while (queuePhotoToPricessing.Count > 1000 || DownloadedCount > 50)
+                    if (queuePhotoToDownload.Count > 0)
                     {
-                        Thread.Sleep(1);
-                    }
-                    var url = "";
-                    if (queuePhotoToDownload.TryDequeue(out url))
-                    {
-                        if (clientsPool.TryDequeue(out HttpClient client))
+                        while (queuePhotoToPricessing.Count > 1000 || DownloadedCount > 50)
                         {
-                            DownloadedCount++;
-                            CurrentDownloadingTasks.Increment();
-                            client.GetByteArrayAsync(url).ContinueWith(ProcessDownloaded,new HttpClientSateteModel {Url=url,Client=client });
+                            Thread.Sleep(1);
+                        }
+                        var url = "";
+                        if (queuePhotoToDownload.TryDequeue(out url))
+                        {
+                            if (clientsPool.TryDequeue(out HttpClient client))
+                            {
+                                DownloadedCount++;
+                                CurrentDownloadingTasks.Increment();
+                                client.GetByteArrayAsync(url).ContinueWith(ProcessDownloaded, new HttpClientSateteModel { Url = url, Client = client });
+                            }
+                        }
+                        else
+                        {
+                            Console.WriteLine("Http clietn deq error!");
                         }
                     }
-                    else
-                    {
-                        Console.WriteLine("Http clietn deq error!");
-                    }
-
+                }
+                catch(Exception ex)
+                {
+                    Console.WriteLine(ex);
                 }
             }
         }
