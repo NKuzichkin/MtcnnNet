@@ -47,7 +47,7 @@ namespace MtcnnNet
 
             var configuration = TelemetryConfiguration.CreateDefault();
             configuration.InstrumentationKey = "2fb6d9cb-c098-4ee9-a5b9-df1da328d483";
-            var telemetryClient = new TelemetryClient();
+            var telemetryClient = new TelemetryClient(configuration);
             for (var i = 0; i < 60; i++)
             {
                 clientsPool.Enqueue(new HttpClient());

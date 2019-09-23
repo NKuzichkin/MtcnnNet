@@ -17,10 +17,12 @@ namespace MtcnnNet
         public ConsoleMetricReporter(TelemetryClient telemetryClient)
         {
             this.telemetryClient = telemetryClient;
+            telemetryClient.InstrumentationKey = "2fb6d9cb-c098-4ee9-a5b9-df1da328d483";
         }
 
         public void RunReport(MetricsData metricsData, Func<HealthStatus> healthStatus, CancellationToken token)
         {
+           
             foreach (var gauge in metricsData.Gauges)
             {                
                 var metric = telemetryClient.GetMetric(gauge.Name);
