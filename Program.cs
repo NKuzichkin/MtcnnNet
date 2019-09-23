@@ -86,8 +86,8 @@ namespace MtcnnNet
             totalPeopleProcessing = _totalPeopleProcessed.Find(qq2).ToList().FirstOrDefault().PeopleProcessing;
 
             Console.WriteLine("Start peopele to processing ressived");
-            
-            
+
+
             //var peopleToProcessing = peopleToProcessingCursor.ToEnumerable();
             // Console.WriteLine("People to processing: "+peopleToProcessing.Count);
 
@@ -106,49 +106,54 @@ namespace MtcnnNet
             Console.WriteLine("Thread init OK");
             while (true)
             {
-                var peopleToProcessingCursor = _collectionPeoples.Find(q, new FindOptions
+                try
                 {
-                    NoCursorTimeout = true,
-                    BatchSize = 500,
-                }).Skip(totalPeopleProcessing).ToCursor();
-
-                var currentCursorItemsProcessed = 0;
-                while (peopleToProcessingCursor.MoveNext())
-                {
-                    currentCursorItemsProcessed++;
-                    var peopleToProcessing = peopleToProcessingCursor.Current.ToList();
-                    Console.WriteLine(peopleToProcessing.Count);
-
-                    foreach (var people in peopleToProcessing)
+                    var peopleToProcessingCursor = _collectionPeoples.Find(q, new FindOptions
                     {
-                        TotalPeopleProcessed.Increment();
-                        totalPeopleProcessing++;
-                        sessionPeopleProcessing++;
-                        if (people.Photos == null) continue;
-                        foreach (var photo in people.Photos)
+                        NoCursorTimeout = true,
+                        BatchSize = 500,
+                    }).Skip(totalPeopleProcessing).ToCursor();
+
+                    var currentCursorItemsProcessed = 0;
+                    while (peopleToProcessingCursor.MoveNext())
+                    {
+                        currentCursorItemsProcessed++;
+                        var peopleToProcessing = peopleToProcessingCursor.Current.ToList();
+                        Console.WriteLine(peopleToProcessing.Count);
+
+                        foreach (var people in peopleToProcessing)
                         {
-                            if (string.IsNullOrWhiteSpace(photo)) continue;
-                            if (photo == "https://vk.com/images/x_null.gif") continue;
-                            //if (_collectionPhoto.Find(Builders<PhotoModel>.Filter.Eq(x => x.photo, photo)).Limit(1).CountDocuments() == 0)
+                            TotalPeopleProcessed.Increment();
+                            totalPeopleProcessing++;
+                            sessionPeopleProcessing++;
+                            if (people.Photos == null) continue;
+                            foreach (var photo in people.Photos)
                             {
-                                queuePhotoToDownload.Enqueue(photo);
-                                
+                                if (string.IsNullOrWhiteSpace(photo)) continue;
+                                if (photo == "https://vk.com/images/x_null.gif") continue;
+                                //if (_collectionPhoto.Find(Builders<PhotoModel>.Filter.Eq(x => x.photo, photo)).Limit(1).CountDocuments() == 0)
+                                {
+                                    queuePhotoToDownload.Enqueue(photo);
+
                                     while (queuePhotoToDownload.Count > 5000)
                                     {
                                         Thread.Sleep(10);
                                     }
-                                
+                                }
+                            }
+                            if (totalPeopleProcessing % 300 == 0)
+                            {
+                                var qqq = Builders<ProcessingStateModel>.Filter.Eq(x => x.Id, 1);
+                                var updatum = Builders<ProcessingStateModel>.Update.Set(x => x.PeopleProcessing, totalPeopleProcessing);
+                                _totalPeopleProcessed.UpdateOne(qqq, updatum);
                             }
                         }
-                        if (totalPeopleProcessing % 300 == 0)
-                        {
-                            var qqq = Builders<ProcessingStateModel>.Filter.Eq(x => x.Id, 1);
-                            var updatum = Builders<ProcessingStateModel>.Update.Set(x => x.PeopleProcessing, totalPeopleProcessing);
-                            _totalPeopleProcessed.UpdateOne(qqq, updatum);
-                        }
+                        if (currentCursorItemsProcessed > 1) continue;
                     }
+                }
+                catch
+                {
 
-                    if (currentCursorItemsProcessed > 1) continue;
                 }
             }
         }
@@ -309,8 +314,7 @@ sys.path.insert(0, '/content/MtcnnNet/')");
                         {
                             Thread.Sleep(1);
                         }
-                        var url = "";
-                        if (queuePhotoToDownload.TryDequeue(out url))
+                        if (queuePhotoToDownload.TryDequeue(out string url))
                         {
                             if (clientsPool.TryDequeue(out HttpClient client))
                             {
@@ -324,8 +328,12 @@ sys.path.insert(0, '/content/MtcnnNet/')");
                             Console.WriteLine("Http clietn deq error!");
                         }
                     }
+                    else
+                    {
+                        Thread.Sleep(1);
+                    }
                 }
-                catch(Exception ex)
+                catch (Exception ex)
                 {
                     Console.WriteLine(ex);
                 }
@@ -409,7 +417,7 @@ sys.path.insert(0, '/content/MtcnnNet/')");
                     var downloadedPhoto = arg1.Result;
                     var tmpFilename = state.Url.Replace("http://", "").Replace("https://", "").Replace("/", "_");
                     File.WriteAllBytes(tmpFilename, downloadedPhoto);
-                    queuePhotoToPricessing.Enqueue((tmpFilename,state.Url));
+                    queuePhotoToPricessing.Enqueue((tmpFilename, state.Url));
                 }
                 catch (Exception ex)
                 {
