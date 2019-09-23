@@ -2,6 +2,7 @@
 using Metrics;
 using Metrics.MetricData;
 using Metrics.Reporters;
+using Microsoft.ApplicationInsights;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -11,34 +12,61 @@ namespace MtcnnNet
 {
     class ConsoleMetricReporter : MetricsReport
     {
+        private TelemetryClient telemetryClient;
+
+        public ConsoleMetricReporter(TelemetryClient telemetryClient)
+        {
+            this.telemetryClient = telemetryClient;
+        }
+
         public void RunReport(MetricsData metricsData, Func<HealthStatus> healthStatus, CancellationToken token)
         {
-            Console.Clear();
-            var table = new ConsoleTable("Parametr", "Value", "unit");
-
             foreach (var gauge in metricsData.Gauges)
-            {
-                table.AddRow(gauge.Name, gauge.Value, gauge.Unit);
+            {                
+                var metric = telemetryClient.GetMetric(gauge.Name);
+                metric.TrackValue(gauge.Value, gauge.Unit.Name);
             }
 
 
             foreach (var counter in metricsData.Counters)
             {
-                table.AddRow(counter.Name, counter.Value.Count, counter.Unit);
+                var metric = telemetryClient.GetMetric(counter.Name);
+                metric.TrackValue(counter.Value.Count, counter.Unit.Name);
             }
 
             foreach (var timer in metricsData.Timers)
             {
-                table.AddRow(timer.Name + "[ActiveSessions]", timer.Value.ActiveSessions, timer.Unit);
-                table.AddRow(timer.Name + "[Rate]", timer.Value.Rate.OneMinuteRate, timer.Unit);
-                
+                var metric = telemetryClient.GetMetric(timer.Name + "[ActiveSessions]");
+                metric.TrackValue(timer.Value.Rate.OneMinuteRate, timer.Unit.Name);
+
+                metric = telemetryClient.GetMetric(timer.Name + "[Rate]");
+                metric.TrackValue(timer.Value.Rate.OneMinuteRate, timer.Unit.Name);
             }
 
-            table.Write();
-            Console.WriteLine();
+
+            //Console.Clear();
+            //var table = new ConsoleTable("Parametr", "Value", "unit");
+
+            //foreach (var gauge in metricsData.Gauges)
+            //{
+            //    table.AddRow(gauge.Name, gauge.Value, gauge.Unit);
+            //}
 
 
+            //foreach (var counter in metricsData.Counters)
+            //{
+            //    table.AddRow(counter.Name, counter.Value.Count, counter.Unit);
+            //}
 
+            //foreach (var timer in metricsData.Timers)
+            //{
+            //    table.AddRow(timer.Name + "[ActiveSessions]", timer.Value.ActiveSessions, timer.Unit);
+            //    table.AddRow(timer.Name + "[Rate]", timer.Value.Rate.OneMinuteRate, timer.Unit);
+
+            //}
+
+            //table.Write();
+            //Console.WriteLine();
         }
     }
 }

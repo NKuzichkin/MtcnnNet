@@ -1,4 +1,6 @@
 ﻿using Metrics;
+using Microsoft.ApplicationInsights;
+using Microsoft.ApplicationInsights.Extensibility;
 using MongoDB.Driver;
 using Python.Runtime;
 using System;
@@ -10,6 +12,7 @@ using System.Net.Http;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Metric = Metrics.Metric;
 
 namespace MtcnnNet
 {
@@ -42,6 +45,9 @@ namespace MtcnnNet
         static void Main(string[] args)
         {
 
+            var configuration = TelemetryConfiguration.CreateDefault();
+            configuration.InstrumentationKey = "2fb6d9cb-c098-4ee9-a5b9-df1da328d483";
+            var telemetryClient = new TelemetryClient();
             for (var i = 0; i < 60; i++)
             {
                 clientsPool.Enqueue(new HttpClient());
@@ -53,10 +59,12 @@ namespace MtcnnNet
             Metric.Gauge("queuePhotoToPricessing_Count", () => { return queuePhotoToPricessing.Count; }, Unit.Items);
             Metric.Gauge("queueResultToDbSave_Count", () => { return queueResultToDbSave.Count; }, Unit.Items);
             Metric.Gauge("clientsPool_Count", () => { return clientsPool.Count; }, Unit.Items);
+
+
             Metric.Config
 
                 //   // .WithHttpEndpoint("http://+:1234/")
-                .WithReporting(report => report.WithReport(new ConsoleMetricReporter(), TimeSpan.FromSeconds(20)));
+                .WithReporting(report => report.WithReport(new ConsoleMetricReporter(telemetryClient), TimeSpan.FromSeconds(20)));
 
             // .WithAppCounters();
             //    .WithAllCounters();
