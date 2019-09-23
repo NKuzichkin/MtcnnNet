@@ -48,6 +48,7 @@ namespace MtcnnNet
             }
 
             Metric.Gauge("FileToTransferCount", () => { return queueFileFaceImgProcessing.Count; }, Unit.Items);
+            Metric.Gauge("DownloadedCount", () => { return DownloadedCount; }, Unit.Items);
             Metric.Gauge("queuePhotoToDownload_Count", () => { return queuePhotoToDownload.Count; }, Unit.Items);
             Metric.Gauge("queuePhotoToPricessing_Count", () => { return queuePhotoToPricessing.Count; }, Unit.Items);
             Metric.Gauge("queueResultToDbSave_Count", () => { return queueResultToDbSave.Count; }, Unit.Items);
@@ -310,7 +311,7 @@ sys.path.insert(0, '/content/MtcnnNet/')");
                 {
                     if (queuePhotoToDownload.Count > 0)
                     {
-                        while (queuePhotoToPricessing.Count > 10000 || DownloadedCount > 50)
+                        while (queuePhotoToPricessing.Count > 10000 || clientsPool.Count==0)
                         {
                             Thread.Sleep(1);
                         }
