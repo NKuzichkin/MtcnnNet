@@ -24,25 +24,25 @@ namespace MtcnnNet
             foreach (var gauge in metricsData.Gauges)
             {                
                 var metric = telemetryClient.GetMetric(gauge.Name);
-                metric.TrackValue(gauge.Value, gauge.Unit.Name);
+                metric.TrackValue(gauge.Value);
             }
 
 
             foreach (var counter in metricsData.Counters)
             {
                 var metric = telemetryClient.GetMetric(counter.Name);
-                metric.TrackValue(counter.Value.Count, counter.Unit.Name);
+                metric.TrackValue(counter.Value.Count);
             }
 
             foreach (var timer in metricsData.Timers)
             {
                 var metric = telemetryClient.GetMetric(timer.Name + "[ActiveSessions]");
-                metric.TrackValue(timer.Value.Rate.OneMinuteRate, timer.Unit.Name);
+                metric.TrackValue(timer.Value.Rate.OneMinuteRate);
 
                 metric = telemetryClient.GetMetric(timer.Name + "[Rate]");
-                metric.TrackValue(timer.Value.Rate.OneMinuteRate, timer.Unit.Name);
+                metric.TrackValue(timer.Value.Rate.OneMinuteRate);
             }
-
+            telemetryClient.Flush();
 
             //Console.Clear();
             //var table = new ConsoleTable("Parametr", "Value", "unit");
