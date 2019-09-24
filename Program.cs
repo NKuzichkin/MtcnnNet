@@ -144,7 +144,7 @@ namespace MtcnnNet
                                 {
                                     queuePhotoToDownload.Enqueue(photo);
 
-                                    while (queuePhotoToDownload.Count > 5000)
+                                    while (queuePhotoToDownload.Count > 100)
                                     {
                                         Thread.Sleep(10);
                                     }
@@ -319,7 +319,7 @@ sys.path.insert(0, '/content/MtcnnNet/')");
                 {
                     if (queuePhotoToDownload.Count > 0)
                     {
-                        while (queuePhotoToPricessing.Count > 10000 || clientsPool.Count==0)
+                        while (queuePhotoToPricessing.Count > 100 || clientsPool.Count==0)
                         {
                             Thread.Sleep(1);
                         }
@@ -387,7 +387,7 @@ sys.path.insert(0, '/content/MtcnnNet/')");
         {
             while (true)
             {
-                if (queueResultToDbSave.Count > 50)
+                if (queueResultToDbSave.Count > 100)
                 {
                     var buffer = new List<PhotoModel>();
                     for (var h = 0; h < 50; h++)
